@@ -1,9 +1,6 @@
 package shell;
 
-import ch.ethz.ssh2.Connection;
-import ch.ethz.ssh2.HTTPProxyData;
-import ch.ethz.ssh2.Session;
-import ch.ethz.ssh2.StreamGobbler;
+import ch.ethz.ssh2.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,21 +22,22 @@ public class Ganymed {
     private String pwd;
     private Connection conn;
     private int port;
-    public Ganymed(String hostName,String userName,String pwd){
+
+    public Ganymed(String hostName, String userName, String pwd) {
         this.hostName = hostName;
         this.userName = userName;
         this.pwd = pwd;
         this.port = 22;
     }
 
-    public Ganymed(String hostName,String userName,String pwd, int port){
+    public Ganymed(String hostName, String userName, String pwd, int port) {
         this.hostName = hostName;
         this.userName = userName;
         this.pwd = pwd;
         this.port = port;
     }
 
-    public void execCommand(String cmd){
+    public void execCommand(String cmd) {
         try {
             Session sess = conn.openSession();
             sess.execCommand(cmd);
@@ -61,14 +59,31 @@ public class Ganymed {
         }
 
     }
+
     public boolean connect() {
-        //conn = new Connection(hostName);
         conn = new Connection(hostName, port);
-        //connect.setProxyData(new HTTPProxyData(proxyHost, proxyPort));
         try {
             conn.connect();
-            boolean isAuthenticated = conn.authenticateWithPassword(userName, pwd);
-            if (isAuthenticated == false)
+            boolean isAvailable = conn.isAuthMethodAvailable(userName, pwd);
+            if (isAvailable)
+                isAvailable = conn.authenticateWithPassword(userName, pwd);
+            else {
+                try {
+                    isAvailable = conn.authenticateWithKeyboardInteractive(userName, new InteractiveCallback() {
+                        public String[] replyToChallenge(String name, String instruction, int numPrompts,
+                                                         String[] prompt, boolean[] echo)
+                                throws Exception {
+                            String[] responses = new String[numPrompts];
+                            for (int x = 0; x < numPrompts; x++) {
+                                responses[x] = pwd;
+                            }
+                            return responses;
+                        }
+                    });
+                } catch (IOException ex) {
+                }
+            }
+            if (isAvailable == false)
                 throw new IOException("Authentication failed.");
             return true;
         } catch (IOException e) {
@@ -77,7 +92,8 @@ public class Ganymed {
         }
         return false;
     }
-    private void close(){
+
+    private void close() {
         conn.close();
     }
 }
