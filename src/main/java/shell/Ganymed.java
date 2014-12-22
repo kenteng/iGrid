@@ -24,11 +24,21 @@ public class Ganymed {
     private String userName;
     private String pwd;
     private Connection conn;
+    private int port;
     public Ganymed(String hostName,String userName,String pwd){
         this.hostName = hostName;
         this.userName = userName;
         this.pwd = pwd;
+        this.port = 22;
     }
+
+    public Ganymed(String hostName,String userName,String pwd, int port){
+        this.hostName = hostName;
+        this.userName = userName;
+        this.pwd = pwd;
+        this.port = port;
+    }
+
     public void execCommand(String cmd){
         try {
             Session sess = conn.openSession();
@@ -52,7 +62,8 @@ public class Ganymed {
 
     }
     public boolean connect() {
-        conn = new Connection(hostName);
+        //conn = new Connection(hostName);
+        conn = new Connection(hostName, port);
         //connect.setProxyData(new HTTPProxyData(proxyHost, proxyPort));
         try {
             conn.connect();

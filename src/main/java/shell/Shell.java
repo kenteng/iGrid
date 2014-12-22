@@ -215,4 +215,14 @@ public class Shell {
         }
     }
 
+    public boolean startJar(){
+        return true;
+    }
+
+    private boolean copyJar(){
+        return true;
+    }
+
+
+
 }
