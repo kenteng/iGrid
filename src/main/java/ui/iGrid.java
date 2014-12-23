@@ -20,9 +20,12 @@ public class iGrid extends JDialog {
 
         StartHub.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                if (startHub())
-                    table1.setValueAt(lib.getHubIP(), 0, 0);
-                table1.setValueAt("true", 0, 2);
+                boolean isValid = startHub();
+                if (isValid) {
+                    table1.setValueAt(lib.HostIP, 0, 0);
+                    table1.setValueAt(isValid, 0, 2);
+                    contentPane.repaint();
+                }
             }
         });
 
@@ -43,6 +46,7 @@ public class iGrid extends JDialog {
                     setNewNode(list.get(0), list.get(1), list.get(2), Integer.parseInt(list.get(3)));
                 }
             }
+
         });
 
 // call onCancel() when cross is clicked
@@ -65,9 +69,10 @@ public class iGrid extends JDialog {
         table1.setShowGrid(true);
         table1.setModel(new TableModel());
         table1.setVisible(true);
-        table1.setValueAt(lib.getHubIP(), 0, 0);
+        table1.setValueAt(lib.HostIP, 0, 0);
         table1.setValueAt("hub", 0, 1);
         table1.setValueAt("unknown", 0, 2);
+        contentPane.repaint();
     }
 
     private boolean setNewNode(String hostName, String userName, String pwd) {
@@ -77,6 +82,7 @@ public class iGrid extends JDialog {
             table1.setValueAt(hostName, i, 0);
             table1.setValueAt("node", i, 1);
             table1.setValueAt("true", i, 2);
+            contentPane.repaint();
             return true;
         }
         return false;
@@ -85,13 +91,14 @@ public class iGrid extends JDialog {
     private boolean setNewNode(String hostName, String userName, String pwd, int port) {
         Ganymed ganymed = new Ganymed(hostName, userName, pwd, port);
         boolean isValid = false;
+        int i = table1.getRowCount();
         if (ganymed.connect()) {
-            String cmd = "java -jar /root/Documents/selenium-server-standalone-2.40.0.jar -role node -hub http://" + lib.getHubIP() + ":4444/grid/register";
+            String cmd = "java -jar /root/Documents/selenium-server-standalone-2.40.0.jar -role node -hub http://" + lib.HostIP + ":4444/grid/register";
             isValid = ganymed.execCommand(cmd);
-            int i = table1.getRowCount();
             table1.setValueAt(hostName, i, 0);
             table1.setValueAt("node", i, 1);
             table1.setValueAt(isValid, i, 2);
+            contentPane.repaint();
             return true;
         }
         return false;
@@ -99,7 +106,7 @@ public class iGrid extends JDialog {
 
 
     private boolean startHub() {
-        Ganymed ganymed = new Ganymed(lib.getHubIP(), "shockwave", "admaster");
+        Ganymed ganymed = new Ganymed(lib.HostIP, "shockwave", "admaster");
         if (ganymed.connect()) {
             String path = System.getProperty("user.dir");
             String cmd = "java -jar " + path + "/selenium-server-standalone-2.40.0.jar -role hub";

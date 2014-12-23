@@ -3,6 +3,9 @@ package shell;
 import ch.ethz.ssh2.*;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by kteng on 2014/12/21.
@@ -91,16 +94,16 @@ public class Ganymed {
         int pid = 0;
         try {
             session = conn.openSession();
-            session.execCommand("jps");
+            session.execCommand("ps -ef | grep " + pName);
             InputStream stdout = new StreamGobbler(session.getStdout());
             BufferedReader br = new BufferedReader(new InputStreamReader(stdout));
             while (true) {
                 String line = br.readLine();
                 if (line == null)
                     break;
-                if (line.contains(pName)) {
-                    String[] temp = line.split(" ");
-                    pid = Integer.parseInt(temp[0]);
+                if (line.contains(pName) && !line.contains("grep")) {
+                    String[] temp = line.split("\\s{1,}");
+                    pid = Integer.parseInt(temp[1]);
                     break;
                 }
             }
@@ -125,40 +128,32 @@ public class Ganymed {
 
     public boolean connect() {
         conn = new Connection(hostName, port);
+        boolean isAvailable = false;
         try {
             conn.connect();
-            if (conn.authenticateWithPassword(userName, pwd)) {
-                return true;
-            } else {
-                boolean isAvailable = conn.isAuthMethodAvailable(userName, pwd);
-                if (isAvailable)
-                    isAvailable = conn.authenticateWithPassword(userName, pwd);
-                else {
-                    try {
-                        isAvailable = conn.authenticateWithKeyboardInteractive(userName, new InteractiveCallback() {
-                            public String[] replyToChallenge(String name, String instruction, int numPrompts,
-                                                             String[] prompt, boolean[] echo)
-                                    throws Exception {
-                                String[] responses = new String[numPrompts];
-                                for (int x = 0; x < numPrompts; x++) {
-                                    responses[x] = pwd;
-                                }
-                                return responses;
-                            }
-                        });
-                    } catch (IOException ex) {
+            //List list = Arrays.asList(conn.getRemainingAuthMethods(userName));
+            if (conn.isAuthMethodAvailable(userName, "password")) {
+                isAvailable = conn.authenticateWithPassword(userName, pwd);
+            } else if (conn.isAuthMethodAvailable(userName, "keyboard-interactive")) {
+                isAvailable = conn.authenticateWithKeyboardInteractive(userName, new InteractiveCallback() {
+                    public String[] replyToChallenge(String name, String instruction, int numPrompts,
+                                                     String[] prompt, boolean[] echo)
+                            throws Exception {
+                        String[] responses = new String[numPrompts];
+                        for (int x = 0; x < numPrompts; x++) {
+                            responses[x] = pwd;
+                        }
+                        return responses;
                     }
-                }
-                if (isAvailable == false)
-                    throw new IOException("Authentication failed.");
-                return true;
+                });
             }
         } catch (IOException e) {
             e.printStackTrace(System.err);
             System.exit(2);
         }
-        return false;
+        return isAvailable;
     }
+
 
     private void close() {
         conn.close();
