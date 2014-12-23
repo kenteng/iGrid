@@ -4,6 +4,7 @@ import shell.Ganymed;
 
 import javax.swing.*;
 import java.awt.event.*;
+import java.util.List;
 
 public class iGrid extends JDialog {
     private JPanel contentPane;
@@ -38,7 +39,9 @@ public class iGrid extends JDialog {
 
         NewNode.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                setNewNode("192.168.3.18", "root", "admaster", 1622);
+                for (List<String> list : lib.nodesList().values()) {
+                    setNewNode(list.get(0), list.get(1), list.get(2), Integer.parseInt(list.get(3)));
+                }
             }
         });
 
@@ -81,21 +84,26 @@ public class iGrid extends JDialog {
 
     private boolean setNewNode(String hostName, String userName, String pwd, int port) {
         Ganymed ganymed = new Ganymed(hostName, userName, pwd, port);
+        boolean isValid = false;
         if (ganymed.connect()) {
+            String cmd = "java -jar /root/Documents/selenium-server-standalone-2.40.0.jar -role node -hub http://" + lib.getHubIP() + ":4444/grid/register";
+            isValid = ganymed.execCommand(cmd);
             int i = table1.getRowCount();
             table1.setValueAt(hostName, i, 0);
             table1.setValueAt("node", i, 1);
-            table1.setValueAt("true", i, 2);
+            table1.setValueAt(isValid, i, 2);
             return true;
         }
         return false;
     }
 
+
     private boolean startHub() {
         Ganymed ganymed = new Ganymed(lib.getHubIP(), "shockwave", "admaster");
         if (ganymed.connect()) {
-            ganymed.execCommand("ls");
-            return true;
+            String path = System.getProperty("user.dir");
+            String cmd = "java -jar " + path + "/selenium-server-standalone-2.40.0.jar -role hub";
+            return ganymed.execCommand(cmd);
         }
         return false;
     }
@@ -114,4 +122,5 @@ public class iGrid extends JDialog {
     private void createUIComponents() {
         // TODO: place custom component creation code here
     }
+
 }
